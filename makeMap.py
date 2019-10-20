@@ -2,8 +2,9 @@
 import pandas as pd
 import os
 import sys
-crate = sys.argv[1]
+crate = sys.argv[1] 
 outDir = sys.argv[2]
+des = sys.argv[3]
 outdirxlxs = os.path.join(outDir,'xlxs')
 outdirtext = os.path.join(outDir,'text')
 outdirtext_aligned = os.path.join(outDir,'text_aligned')
@@ -22,16 +23,17 @@ mapping_phi = pd.read_excel("patch.xlsx", sheet_name='det_side_c'+crate)
 oldlMap = pd.read_excel("Lmap_HO_L_20190208.xlsx",sheet_name='HTR')
 outxlxs = os.path.join(outdirxlxs,'mapping_phi.xlsx')
 
+Calib_Lmap = pd.read_excel("ngHOcalib.xlsx", sheet_name='Lmap_HOcalib')
+Calib_Emap = pd.read_excel("ngHOcalib.xlsx", sheet_name='Emap_HOcalib')
+
 couplers_convert = {0:6,1:5,2:4,3:3,4:2,5:1}
 
 if os.path.exists(outxlxs) : 
-    des = input("out file exists: "+outxlxs+' would you like to remove it ? Y/N: ') 
     if ( "y" in des or "Y" in des or "Yes" in des) :
         os.remove(outxlxs)
     elif ( "N" in des or  "n" in des or  "No" in des ): print(outxlxs , "will be ovewritten -- take care"  )
     else :
     	raise ValueError( "do not understand your potion")    
-des = ''
 
 columns = []
 for i in range(1,36+1) : 
@@ -65,6 +67,7 @@ for j,col in enumerate(columns) :
             rm_fi = rm_fi - 24
         elif (rm_fi > 31 and rm_fi <= 37) : 
             rm_fi = rm_fi - 30
+        if rm == '5' : rm_fi = 1
         code = side+rbx_no+'-'+rm+str(rm_fi)
 
         #print(j, side , ring, rbx,rbx_no, rm,code)
@@ -84,7 +87,6 @@ print (10*"--")
 outxlxsLmap = os.path.join(outdirxlxs,'Lmap.xlsx')
 
 if os.path.exists(outxlxsLmap) : 
-    des = input("out file exists: "+outxlxsLmap+' would you like to remove it ? Y/N: ') 
     if ( "y" in des or "Y" in des or "Yes" in des) :
         os.remove(outxlxsLmap)
     elif ( "N" in des or  "n" in des or  "No" in des ): print(outxlxsLmap , "will be ovewritten -- take care"  )
@@ -145,6 +147,7 @@ for index, colval in new_Map.iterrows():
     if new_Map.loc[index,'Crate'] == 33 : 
         new_Map.loc[index,'Crate'] = 38 
         new_Map.loc[index,'FEDid'] = new_Map.loc[index,'FEDid'] + 4
+
 new_Map = new_Map.drop(columns=['ring','rbx_no','code','DCC_SL','Spigot','DCC','mtp_fib'])
 new_Map = new_Map[correct_order]
 new_Map = (new_Map.replace(r'^\s*$', "#N/A", regex=True))
@@ -152,6 +155,25 @@ new_Map = (new_Map.replace(r'^\s*$', "#N/A", regex=True))
 mode = 'a' if os.path.exists(outxlxsLmap) else 'W'
 with pd.ExcelWriter(outxlxsLmap,mode=mode ) as writer : 
     new_Map.to_excel(writer,sheet_name='Lmap_c'+crate,index=False)
+
+xl = pd.ExcelFile(outxlxsLmap)
+sheetlist = xl.sheet_names 
+
+if not 'Calib_Lmap' in  sheetlist : 
+    print ("ngHO calibration map is not existing in ",outxlxsLmap,"will add it")
+    with pd.ExcelWriter(outxlxsLmap,mode='a' ) as writer : 
+        Calib_Lmap.to_excel(writer,sheet_name='Calib_Lmap',index=False)
+        Calib_Lmap.to_csv(os.path.join(outdirtext,'Lmap_ngHOCalib.txt'), sep='\t',header=True, index=False)
+        file = open(os.path.join(outdirtext_aligned,'Lmap_ngHOCalib_aligned.txt'),"w") 
+        with open(os.path.join(outdirtext,'Lmap_ngHOCalib.txt'), 'r') as f:
+            for line in f:
+                data = line.split()
+                x = [str(x) for x in range(1,26)]
+                #print(data.formate(*x))
+                file.write('{0[0]:<7}{0[1]:<7}{0[2]:<5}{0[3]:<7}{0[4]:<7}{0[5]:<12}{0[6]:<7}{0[7]:<7}{0[8]:<7}{0[9]:<10}{0[10]:<7}{0[11]:<7}{0[12]:<7}{0[13]:<7}{0[14]:<7}{0[15]:<15}{0[16]:<7}{0[17]:<7}{0[18]:<7}{0[19]:<10}{0[20]:<7}{0[21]:<7}'.format(data))
+                file.write('\n')
+        f.close()
+
 
 new_Map.to_csv(os.path.join(outdirtext,'Lmap_c'+crate+'.txt'), sep='\t',header=True, index=False)
 # to align the coloumns with the wight spaces
@@ -161,7 +183,7 @@ with open(os.path.join(outdirtext,'Lmap_c'+crate+'.txt'), 'r') as f:
         data = line.split()
         x = [str(x) for x in range(1,26)]
         #print(data.formate(*x))
-        file.write('{0[0]:<7}{0[1]:<7}{0[2]:<5}{0[3]:<7}{0[4]:<7}{0[5]:<7}{0[6]:<7}{0[7]:<7}{0[8]:<7}{0[9]:<10}{0[10]:<7}{0[11]:<7}{0[12]:<7}{0[13]:<7}{0[14]:<7}{0[15]:<15}{0[16]:<7}{0[17]:<7}{0[18]:<7}{0[19]:<10}{0[20]:<7}{0[21]:<7}'.format(data))
+        file.write('{0[0]:<7}{0[1]:<7}{0[2]:<5}{0[3]:<7}{0[4]:<7}{0[5]:<12}{0[6]:<7}{0[7]:<7}{0[8]:<7}{0[9]:<10}{0[10]:<7}{0[11]:<7}{0[12]:<7}{0[13]:<7}{0[14]:<7}{0[15]:<15}{0[16]:<7}{0[17]:<7}{0[18]:<7}{0[19]:<10}{0[20]:<7}{0[21]:<7}'.format(data))
         file.write('\n')
 f.close()
 
@@ -175,7 +197,6 @@ LMap = pd.read_excel(outxlxsLmap,sheet_name='Lmap_c'+crate)
 outxlxsEmap = os.path.join(outdirxlxs,'Emap_ngHO.xlsx')
 
 if os.path.exists(outxlxsEmap) : 
-    des = input("out file exists: "+outxlxsEmap+' would you like to remove it ? Y/N: ') 
     if ( "y" in des or "Y" in des or "Yes" in des) :
         os.remove(outxlxsEmap)
     elif ( "N" in des or  "n" in des or  "No" in des ): print(outxlxsEmap , "will be ovewritten -- take care"  )
@@ -217,6 +238,24 @@ mode = 'a' if os.path.exists(outxlxsEmap) else 'W'
 with pd.ExcelWriter(outxlxsEmap,mode=mode ) as writer :
     Emap.to_excel(writer,sheet_name='Emap_ngHO_c'+crate,index=False)
 
+xl = pd.ExcelFile(outxlxsEmap)
+sheetlist = xl.sheet_names 
+
+if not 'Calib_Emap' in sheetlist : 
+    print ("ngHO calibration map is not existing in ",outxlxsEmap,"will add it")
+    with pd.ExcelWriter(outxlxsEmap,mode='a' ) as writer : 
+        Calib_Emap.to_excel(writer,sheet_name='Calib_Emap',index=False)
+        Calib_Emap.to_csv(os.path.join(outdirtext,'Emap_ngHOCalib.txt'), sep='\t',header=True, index=False)
+        file = open(os.path.join(outdirtext_aligned,'Emap_ngHOCalib_aligned.txt'),"w") 
+        with open(os.path.join(outdirtext,'Emap_ngHOCalib.txt'), 'r') as f:
+            for line in f:
+                data = line.split()
+                x = [str(x) for x in range(1,13)]
+                #print(data.formate(*x))
+                file.write('{0[0]:<12}{0[1]:<7}{0[2]:<5}{0[3]:<7}{0[4]:<7}{0[5]:<12}{0[6]:<12}{0[7]:<12}{0[8]:<12}{0[9]:<10}{0[10]:<7}{0[11]:<7}'.format(data))
+                file.write('\n')
+        f.close()
+
 Emap.to_csv(os.path.join(outdirtext,'Emap_ngHO_c'+crate+'.txt'), sep='\t',header=True, index=False)
 file = open(os.path.join(outdirtext_aligned,'Emap_ngHO_c'+crate+'_aligned.txt'),"w") 
 with open(os.path.join(outdirtext,'Emap_ngHO_c'+crate+'.txt'), 'r') as f:
@@ -224,10 +263,9 @@ with open(os.path.join(outdirtext,'Emap_ngHO_c'+crate+'.txt'), 'r') as f:
         data = line.split()
         x = [str(x) for x in range(1,13)]
         #print(data.formate(*x))
-        file.write('{0[0]:<12}{0[1]:<7}{0[2]:<5}{0[3]:<7}{0[4]:<7}{0[5]:<7}{0[6]:<12}{0[7]:<12}{0[8]:<12}{0[9]:<10}{0[10]:<7}{0[11]:<7}'.format(data))
+        file.write('{0[0]:<12}{0[1]:<7}{0[2]:<5}{0[3]:<7}{0[4]:<7}{0[5]:<12}{0[6]:<12}{0[7]:<12}{0[8]:<12}{0[9]:<10}{0[10]:<7}{0[11]:<7}'.format(data))
         file.write('\n')
 f.close()
-
 
 print (10*"--")
 print ("all Done, Relaxxxxxx")
