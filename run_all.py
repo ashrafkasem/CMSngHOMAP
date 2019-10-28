@@ -43,3 +43,23 @@ with open(to_merge+'/ngHO_Lmap_allCates_alligned.txt','wb') as wfd:
         with open(f,'rb') as fd:
             shutil.copyfileobj(fd, wfd)
 
+lines_seen = set() # holds lines already seen
+outfile = open(to_merge+'/ngHO_Lmap_allCates_alligned_.txt', "w")
+for line in open(to_merge+'/ngHO_Lmap_allCates_alligned.txt', "r"):
+    if line not in lines_seen: # not a duplicate
+        outfile.write(line)
+        lines_seen.add(line)
+outfile.close()
+
+
+lines_seen = set() # holds lines already seen
+outfile = open(to_merge+'/ngHO_Emap_allCates_alligned_.txt', "w")
+for line in open(to_merge+'/ngHO_Emap_allCates_alligned.txt', "r"):
+    if line not in lines_seen: # not a duplicate
+        outfile.write(line)
+        lines_seen.add(line)
+outfile.close()
+
+
+os.system("mv "+to_merge+'/ngHO_Emap_allCates_alligned_.txt '+to_merge+'/ngHO_Emap_allCates_alligned.txt')
+os.system("mv "+to_merge+'/ngHO_Lmap_allCates_alligned_.txt '+to_merge+'/ngHO_Lmap_allCates_alligned.txt')
