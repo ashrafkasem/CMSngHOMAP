@@ -163,6 +163,7 @@ if not 'Calib_Lmap' in  sheetlist :
     print ("ngHO calibration map is not existing in ",outxlxsLmap,"will add it")
     with pd.ExcelWriter(outxlxsLmap,mode='a' ) as writer : 
         Calib_Lmap.to_excel(writer,sheet_name='Calib_Lmap',index=False)
+        Calib_Lmap = Calib_Lmap.drop(columns=['dodeca'])
         Calib_Lmap.to_csv(os.path.join(outdirtext,'Lmap_ngHOCalib.txt'), sep='\t',header=True, index=False)
         file = open(os.path.join(outdirtext_aligned,'Lmap_ngHOCalib_aligned.txt'),"w") 
         with open(os.path.join(outdirtext,'Lmap_ngHOCalib.txt'), 'r') as f:
@@ -192,7 +193,7 @@ print ("now to Emap")
 print (10*"--")
 
 # now to the Emap
-correct_order =['i','cr','sl','tb','dcc','spigot','fib/slb','fibch/slbch','subdet','eta','phi','dep']
+correct_order =['i','cr','sl','tb','dcc','dodeca','fib/slb','fibch/slbch','subdet','eta','phi','dep']
 LMap = pd.read_excel(outxlxsLmap,sheet_name='Lmap_c'+crate)
 outxlxsEmap = os.path.join(outdirxlxs,'Emap_ngHO.xlsx')
 
@@ -211,7 +212,7 @@ Emap.loc[Emap.loc[(Emap['cr'] == 33)].index,'cr'] = 38
 Emap['sl'] = LMap['uHTR']
 Emap['tb'] = 'u' 
 Emap['dcc'] = '0'
-Emap['spigot'] = '0'
+Emap['dodeca'] = '0'
 Emap['fib/slb'] = LMap['uHTR_fib']
 Emap['fibch/slbch'] = LMap['FI_CH']
 Emap['subdet'] = LMap['Det']

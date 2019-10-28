@@ -2,7 +2,7 @@
 import os
 import sys
 import shutil 
-
+import pandas as pd 
 outDir = sys.argv[1]
 
 if os.path.exists(outDir) : shutil.rmtree(outDir)
