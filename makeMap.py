@@ -17,6 +17,15 @@ if not os.path.exists(outdirtext_aligned) : os.makedirs(outdirtext_aligned)
 correct_order =['Side','Eta','Phi','dPhi','Depth','Det','RBX','Sect','Pix','Let_Code','QIE8','QIECH','RM','RM_FI',
                 'FI_CH','Block_Coupler','Crate','uHTR','MTP','uHTR_fib','FEDid','QIE8id']
 
+FEDID_dict = {"c23left"  : 1124,
+              "c23right" : 1125,
+              "c26left"  : 1128,
+              "c26right" : 1129,
+              "c27left"  : 1126,
+              "c27right" : 1127,
+              "c38left"  : 1130,
+              "c38right" : 1131
+            }
 
 mapping_uhtr = pd.read_excel("patch.xlsx", sheet_name='uhtr_side_c'+crate)
 mapping_phi = pd.read_excel("patch.xlsx", sheet_name='det_side_c'+crate)
@@ -151,6 +160,17 @@ for index, colval in new_Map.iterrows():
 new_Map = new_Map.drop(columns=['ring','rbx_no','code','DCC_SL','Spigot','DCC','mtp_fib'])
 new_Map = new_Map[correct_order]
 new_Map = (new_Map.replace(r'^\s*$', "#N/A", regex=True))
+
+new_Map.loc[new_Map.loc[(new_Map['Crate'] == 23) & (new_Map['uHTR'].astype(int) <= 6)].index,'FEDid'] = FEDID_dict["c23left"]
+new_Map.loc[new_Map.loc[(new_Map['Crate'] == 23) & (new_Map['uHTR'].astype(int) >  6)].index,'FEDid'] = FEDID_dict["c23right"]
+new_Map.loc[new_Map.loc[(new_Map['Crate'] == 26) & (new_Map['uHTR'].astype(int) <= 6)].index,'FEDid'] = FEDID_dict["c26left"]
+new_Map.loc[new_Map.loc[(new_Map['Crate'] == 26) & (new_Map['uHTR'].astype(int) >  6)].index,'FEDid'] = FEDID_dict["c26right"]
+new_Map.loc[new_Map.loc[(new_Map['Crate'] == 27) & (new_Map['uHTR'].astype(int) <= 6)].index,'FEDid'] = FEDID_dict["c27left"]
+new_Map.loc[new_Map.loc[(new_Map['Crate'] == 27) & (new_Map['uHTR'].astype(int) >  6)].index,'FEDid'] = FEDID_dict["c27right"]
+new_Map.loc[new_Map.loc[(new_Map['Crate'] == 38) & (new_Map['uHTR'].astype(int) <= 6)].index,'FEDid'] = FEDID_dict["c38left"]
+new_Map.loc[new_Map.loc[(new_Map['Crate'] == 38) & (new_Map['uHTR'].astype(int) >  6)].index,'FEDid'] = FEDID_dict["c38right"]
+
+
 
 mode = 'a' if os.path.exists(outxlxsLmap) else 'W'
 with pd.ExcelWriter(outxlxsLmap,mode=mode ) as writer : 
