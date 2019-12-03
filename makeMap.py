@@ -151,11 +151,9 @@ for index, colval in new_Map.iterrows():
     new_Map.loc[index,'MTP'] = mapping_uhtr[cloc][rloc].split("-")[1]
     new_Map.loc[index,'mtp_fib'] = mapping_uhtr[cloc][rloc].split("-")[2]
     new_Map.loc[index,'Block_Coupler']= str(couplers_convert[rloc])+","+str(cidx+1)
-    new_Map.loc[index,'FEDid']= new_Map.loc[index,'FEDid'] + 400
     new_Map.loc[index,'uHTR_fib'] = (int(new_Map.loc[index,'mtp_fib'])  - 1 )+ (12* int(new_Map.loc[index,'MTP']))
     if new_Map.loc[index,'Crate'] == 33 : 
         new_Map.loc[index,'Crate'] = 38 
-        new_Map.loc[index,'FEDid'] = new_Map.loc[index,'FEDid'] + 4
 
 new_Map = new_Map.drop(columns=['ring','rbx_no','code','DCC_SL','Spigot','DCC','mtp_fib'])
 new_Map = new_Map[correct_order]
