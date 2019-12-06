@@ -32,6 +32,7 @@ mapping_phi = pd.read_excel("patch.xlsx", sheet_name='det_side_c'+crate)
 oldlMap = pd.read_excel("Lmap_HO_L_20190208.xlsx",sheet_name='HTR')
 outxlxs = os.path.join(outdirxlxs,'mapping_phi.xlsx')
 
+
 Calib_Lmap = pd.read_excel("ngHOcalib.xlsx", sheet_name='Lmap_HOcalib')
 Calib_Emap = pd.read_excel("ngHOcalib.xlsx", sheet_name='Emap_HOcalib')
 
@@ -147,8 +148,8 @@ for index, colval in new_Map.iterrows():
     #
     if (rloc == -999 or cloc == -999 or cidx_ == -999) : continue
     #print(mapping_uhtr[cloc][rloc])
-    new_Map.loc[index,'uHTR'] = mapping_uhtr[cloc][rloc].split("-")[0]
-    new_Map.loc[index,'MTP'] = mapping_uhtr[cloc][rloc].split("-")[1]
+    new_Map.loc[index,'uHTR'] = int(mapping_uhtr[cloc][rloc].split("-")[0])
+    new_Map.loc[index,'MTP'] = int(mapping_uhtr[cloc][rloc].split("-")[1])
     new_Map.loc[index,'mtp_fib'] = mapping_uhtr[cloc][rloc].split("-")[2]
     new_Map.loc[index,'Block_Coupler']= str(couplers_convert[rloc])+","+str(cidx+1)
     new_Map.loc[index,'uHTR_fib'] = (int(new_Map.loc[index,'mtp_fib'])  - 1 )+ (12* int(new_Map.loc[index,'MTP']))
@@ -229,8 +230,8 @@ Emap['cr'] = LMap['Crate']
 Emap.loc[Emap.loc[(Emap['cr'] == 33)].index,'cr'] = 38
 Emap['sl'] = LMap['uHTR']
 Emap['tb'] = 'u' 
-Emap['dcc'] = '0'
-Emap['dodeca'] = '0'
+Emap['dcc'] = 0
+Emap['dodeca'] = 0
 Emap['fib/slb'] = LMap['uHTR_fib']
 Emap['fibch/slbch'] = LMap['FI_CH']
 Emap['subdet'] = LMap['Det']
@@ -285,6 +286,74 @@ with open(os.path.join(outdirtext,'Emap_ngHO_c'+crate+'.txt'), 'r') as f:
         file.write('{0[0]:<12}{0[1]:<7}{0[2]:<5}{0[3]:<7}{0[4]:<7}{0[5]:<12}{0[6]:<12}{0[7]:<12}{0[8]:<12}{0[9]:<10}{0[10]:<7}{0[11]:<7}'.format(data))
         file.write('\n')
 f.close()
+
+print (10*"--")
+print ("now to Trigger allocation Lmap")
+print (10*"--")
+
+Trig_LMap = LMap.copy()
+HOX_idx = Trig_LMap.loc[(Trig_LMap['Det'] == "HOX")].index
+Trig_LMap = Trig_LMap.drop(HOX_idx).reset_index(drop=True)
+Trig_LMap['Type'] = 0
+Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['uHTR'] == 1) | (Trig_LMap['uHTR'] == 3)| (Trig_LMap['uHTR'] == 6)| (Trig_LMap['uHTR'] == 8) ].index,'Type'] = 1
+Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['uHTR'] == 2) | (Trig_LMap['uHTR'] == 5)| (Trig_LMap['uHTR'] == 7) ].index,'Type'] = 2
+Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['uHTR'] == 4)].index,'Type'] = 3
+Trig_LMap['Tx_13'] = 0
+Trig_LMap['Tx_2']  = 0
+Trig_LMap['Tx_fib']  = 0
+
+Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['Eta'] < 5)].index,'Tx_13'] = 7
+Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['Eta'] >= 5)].index,'Tx_13'] = ((Trig_LMap['Phi']+1)/3 % 3).astype(int) + 4 
+Trig_LMap['Tx_2'] = ((Trig_LMap['Phi']+1)/3 % 2).astype(int) + 5 + Trig_LMap['Side'] 
+
+Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['uHTR'] == 4)].index,'Tx_fib'] = Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['uHTR'] == 4)].index,'Tx_2']
+Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['uHTR'] != 4)].index,'Tx_fib'] = Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['uHTR'] != 4)].index,'Tx_13']
+
+Trig_LMap['Tx_LC'] = Trig_LMap['Tx_fib'] - 3 
+#=2*INT(MOD(C2+1;72)/6)+1
+Trig_LMap['phi1'] = 2 * (((Trig_LMap['Phi']+1) % 72)/6).astype(int) + 1 
+#=MID(G2;3;1)*A2+3
+Trig_LMap['TM_row'] = (Trig_LMap['RBX'].str[2].astype(int)*Trig_LMap['Side']) + 3 
+Trig_LMap['TM_col'] = 0
+#=IF(OR(Eta>4;type=3);INT(MOD(Phi+1;72)/3)+1;phi1+IF(OR(uHTR=1;uHTR=6);0;1))
+Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['Eta'] > 4) |(Trig_LMap['Type'] == 3) ].index,'TM_col'] = (((Trig_LMap['Phi']+1) % 72)/3).astype(int) + 1
+Trig_LMap.loc[Trig_LMap.loc[((Trig_LMap['Eta'] <= 4) & (Trig_LMap['Type']!= 3)) & ((Trig_LMap['uHTR'] == 1 ) | (Trig_LMap['uHTR'] == 6 )) ].index,'TM_col'] = Trig_LMap['phi1'] + 0 
+Trig_LMap.loc[Trig_LMap.loc[((Trig_LMap['Eta'] <= 4) & (Trig_LMap['Type']!= 3)) & ((Trig_LMap['uHTR'] != 1 ) & (Trig_LMap['uHTR'] != 6 )) ].index,'TM_col'] = Trig_LMap['phi1'] + 1 
+
+#=(AB2-1)*24+AC2
+Trig_LMap['TM_fib'] = ( (Trig_LMap['TM_row'] - 1) * 24 ) + Trig_LMap['TM_col']
+
+# load the twinMux LUT 
+Trig_LMap['TM_label']  = ''
+TMux_LUT = open("TwinMux_LUT.txt","r")
+for line in TMux_LUT : 
+    line = line.strip()
+    if line[0] == '#': continue
+    (idx, label) = line.split()
+    #print(idx, label)
+    Trig_LMap.loc[Trig_LMap.loc[(Trig_LMap['TM_fib'] == int(idx)) ].index,'TM_label'] = label
+
+Trig_LMap = Trig_LMap.drop(columns=['Type','Tx_13','Tx_2','Tx_fib','phi1'])
+
+outxlxs_trig = os.path.join(outdirxlxs,'Trig_Lmap.xlsx')
+mode = 'a' if os.path.exists(outxlxs_trig) else 'W'
+with pd.ExcelWriter(outxlxs_trig,mode=mode ) as writer : 
+    Trig_LMap.to_excel(writer,sheet_name='Trig_Lmap_'+crate,index=False)
+
+
+Trig_LMap.to_csv(os.path.join(outdirtext,'Trig_LMap_ngHO_c'+crate+'.txt'), sep='\t',header=True, index=False)
+file = open(os.path.join(outdirtext_aligned,'Trig_LMap_ngHO_c'+crate+'_aligned.txt'),"w") 
+with open(os.path.join(outdirtext,'Trig_LMap_ngHO_c'+crate+'.txt'), 'r') as f:
+    for line in f:
+        data = line.split()
+        x = [str(x) for x in range(1,13)]
+        #print(data.formate(*x))
+        file.write('{0[0]:<7}{0[1]:<7}{0[2]:<5}{0[3]:<7}{0[4]:<7}{0[5]:<12}{0[6]:<10}{0[7]:<7}{0[8]:<7}{0[9]:<10}{0[10]:<7}{0[11]:<7}{0[12]:<7}{0[13]:<7}{0[14]:<7}{0[15]:<15}{0[16]:<7}{0[17]:<7}{0[18]:<7}{0[19]:<10}{0[20]:<7}{0[21]:<10}{0[22]:<7}{0[23]:<7}{0[24]:<7}{0[25]:<7}{0[26]:<12}'.format(data))
+        file.write('\n')
+f.close()
+
+#=(AB2-1)*24+AC2
+#print (Trig_LMap)
 
 print (10*"--")
 print ("all Done, Relaxxxxxx")
